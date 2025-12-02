@@ -121,12 +121,11 @@ app.use(express.static(path.join(__dirname, 'dist')));
 
 // Handle React routing - return index.html for all non-API routes
 // This must be the LAST route
-app.get('*', (req, res) => {
-  // Don't serve index.html for API routes
+app.get('/*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'API route not found' });
   }
-  
+
   res.sendFile(path.join(__dirname, 'dist', 'index.html'), (err) => {
     if (err) {
       console.error('Error serving index.html:', err);
@@ -134,6 +133,7 @@ app.get('*', (req, res) => {
     }
   });
 });
+
 
 // ============ START SERVER ============
 
