@@ -207,7 +207,7 @@ function App() {
         {/* Footer */}
         <div className="bg-white rounded-b-3xl shadow-2xl p-4 text-center">
           <p className="text-sm text-gray-600">
-            Built with ❤️ for <span className="font-semibold text-indigo-600">PT Futurescale Digital Indonesia</span>
+            Built with ❤️ for <span className="font-semibold text-indigo-600">Muhammad Syifaaul Jinan</span>
           </p>
           <p className="text-xs text-gray-500 mt-1">AI-Powered Customer Service Portfolio</p>
         </div>
