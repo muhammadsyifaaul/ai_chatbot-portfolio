@@ -21,8 +21,12 @@ app.use(cors({
 app.use(express.json());
 
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY 
+  apiKey: process.env.GROQ_API_KEY
 });
+
+// Debug: Check if API key is loaded
+console.log('🔑 API Key loaded:', process.env.GROQ_API_KEY ? 'Yes ✅' : 'No ❌');
+console.log('🔑 API Key format:', process.env.GROQ_API_KEY?.substring(0, 10) + '...');
 
 const conversations = new Map();
 
@@ -37,11 +41,14 @@ Tugasmu:
 
 Selalu jawab dalam Bahasa Indonesia, singkat tapi informatif, dan ramah.`;
 
+// ============ API ROUTES (MUST BE BEFORE STATIC FILES) ============
 
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV
   });
 });
 
@@ -64,7 +71,7 @@ app.post('/api/chat', async (req, res) => {
         { role: 'system', content: SYSTEM_PROMPT },
         ...history
       ],
-      model: 'llama-3.3-70b-versatile', // Updated model
+      model: 'llama-3.3-70b-versatile',
       temperature: 0.7,
       max_tokens: 1024,
     });
@@ -86,7 +93,8 @@ app.post('/api/chat', async (req, res) => {
   } catch (error) {
     console.error('Chat error:', error);
     res.status(500).json({ 
-      error: 'Failed to process message'
+      error: 'Failed to process message',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -106,14 +114,43 @@ app.get('/api/analytics', (req, res) => {
   });
 });
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'dist')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist/index.html'));
+// ============ SERVE FRONTEND (MUST BE AFTER API ROUTES) ============
+
+// Serve static files from React build
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// Handle React routing - return index.html for all non-API routes
+// This must be the LAST route
+app.get('*', (req, res) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
+  
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'), (err) => {
+    if (err) {
+      console.error('Error serving index.html:', err);
+      res.status(500).send('Error loading application');
+    }
   });
-}
+});
+
+// ============ START SERVER ============
 
 app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+  console.log(`
+╔════════════════════════════════════════╗
+║   🚀 AI Chatbot Server Running        ║
+╚════════════════════════════════════════╝
+  
+📍 Port: ${port}
+🌐 Environment: ${process.env.NODE_ENV || 'development'}
+📊 API Health: http://localhost:${port}/api/health
+  `);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  process.exit(0);
 });
